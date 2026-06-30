@@ -1,0 +1,6 @@
+{
+  "name": "Human-Assisted AI Agent",
+  "description": "A secure human-in-the-loop AI orchestration agent that proposes filesystem actions for manual approval before execution.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
