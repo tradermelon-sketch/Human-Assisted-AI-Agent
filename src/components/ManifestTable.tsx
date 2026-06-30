@@ -25,9 +25,11 @@ export default function ManifestTable({
   const [validationResults, setValidationResults] = useState<ValidationResult[] | null>(null);
   const [validationSummary, setValidationSummary] = useState<{ valid: boolean; msg: string } | null>(null);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(manifest.actions.length > 0 ? 0 : null);
+  const [hasClicked, setHasClicked] = useState(false);
 
   // Validate the manifest on load/change
   useEffect(() => {
+    setHasClicked(false);
     let active = true;
     const runValidation = async () => {
       setIsValidating(true);
@@ -280,25 +282,30 @@ export default function ManifestTable({
       </div>
 
       {/* Action controls bottom bar */}
-      <div className="flex items-center justify-between pt-2 border-t border-[#30363d]/50">
+      <div className="flex items-center justify-between pt-2 border-t border-[#30363d]/50 min-h-[44px]">
         <div className="flex items-center space-x-2 text-xs text-gray-400 font-mono">
           <Info className="w-4 h-4 text-gray-500" />
           <span>Aksi yang lolos verifikasi siap dijalankan secara aman.</span>
         </div>
         
-        <button
-          onClick={() => onExecute(manifest.actions)}
-          disabled={isExecuting || !isAllValid}
-          className={`flex items-center space-x-2 px-5 py-2 text-xs font-semibold rounded transition-all shadow ${
-            isAllValid 
-              ? "bg-[#2ea043] hover:bg-[#2c974b] text-white"
-              : "bg-[#30363d] hover:bg-[#444c56] text-gray-500 border border-[#444c56] cursor-not-allowed"
-          }`}
-          id="approve-run-manifest-btn"
-        >
-          <Play className="w-4 h-4 fill-current" />
-          <span>SETUJUI & JALANKAN</span>
-        </button>
+        {!(isExecuting || hasClicked) && (
+          <button
+            onClick={() => {
+              setHasClicked(true);
+              onExecute(manifest.actions);
+            }}
+            disabled={isExecuting || !isAllValid}
+            className={`flex items-center space-x-2 px-5 py-2 text-xs font-semibold rounded transition-all shadow ${
+              isAllValid 
+                ? "bg-[#2ea043] hover:bg-[#2c974b] text-white"
+                : "bg-[#30363d] hover:bg-[#444c56] text-gray-500 border border-[#444c56] cursor-not-allowed"
+            }`}
+            id="approve-run-manifest-btn"
+          >
+            <Play className="w-4 h-4 fill-current" />
+            <span>SETUJUI & JALANKAN</span>
+          </button>
+        )}
       </div>
     </div>
   );
