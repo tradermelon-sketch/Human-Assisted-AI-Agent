@@ -12,6 +12,7 @@ interface ManifestTableProps {
   onClose: () => void;
   onExecute: (actions: Action[]) => void;
   isExecuting: boolean;
+  isExecuted?: boolean;
 }
 
 export default function ManifestTable({
@@ -19,7 +20,8 @@ export default function ManifestTable({
   messageId,
   onClose,
   onExecute,
-  isExecuting
+  isExecuting,
+  isExecuted = false
 }: ManifestTableProps) {
   const [isValidating, setIsValidating] = useState(false);
   const [validationResults, setValidationResults] = useState<ValidationResult[] | null>(null);
@@ -288,7 +290,7 @@ export default function ManifestTable({
           <span>Aksi yang lolos verifikasi siap dijalankan secara aman.</span>
         </div>
         
-        {!(isExecuting || hasClicked) && (
+        {!(isExecuting || hasClicked || isExecuted) ? (
           <button
             onClick={() => {
               setHasClicked(true);
@@ -305,6 +307,11 @@ export default function ManifestTable({
             <Play className="w-4 h-4 fill-current" />
             <span>SETUJUI & JALANKAN</span>
           </button>
+        ) : (
+          <div className="flex items-center space-x-2 px-4 py-2 text-xs font-semibold text-emerald-400 bg-emerald-950/20 border border-emerald-500/20 rounded font-mono select-none">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>TERKIRIM & SEDANG/TELAH DIJALANKAN</span>
+          </div>
         )}
       </div>
     </div>

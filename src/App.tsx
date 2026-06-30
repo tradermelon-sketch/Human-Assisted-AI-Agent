@@ -39,6 +39,7 @@ export default function App() {
   // Selected Manifest under Review
   const [activeManifest, setActiveManifest] = useState<ActionManifest | null>(null);
   const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
+  const [executedMessageIds, setExecutedMessageIds] = useState<string[]>([]);
 
   // Workspace Switcher States
   const [currentWorkspace, setCurrentWorkspace] = useState<string>("");
@@ -251,6 +252,9 @@ export default function App() {
       content: m.content
     }));
     executeManifest(actions, historyPayload, lastProvider, lastModel);
+    if (activeMessageId) {
+      setExecutedMessageIds(prev => [...prev, activeMessageId]);
+    }
     setActiveTab("execution");
   };
 
@@ -428,6 +432,7 @@ export default function App() {
                     onClose={handleClearReview}
                     onExecute={handleExecuteManifest}
                     isExecuting={isExecuting}
+                    isExecuted={activeMessageId ? executedMessageIds.includes(activeMessageId) : false}
                   />
                 )}
               </motion.div>
