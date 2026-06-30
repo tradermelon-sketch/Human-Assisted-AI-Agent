@@ -151,7 +151,7 @@ export default function App() {
   };
 
   // Send message to back-end chat route
-  const handleSendMessage = async (text: string, provider: string, model: string) => {
+  const handleSendMessage = async (text: string, provider: string, model: string, onlineSearch: boolean) => {
     setLastProvider(provider);
     setLastModel(model);
     const userMsgId = `user-${Date.now()}`;
@@ -179,7 +179,8 @@ export default function App() {
           message: text,
           history: historyPayload,
           provider,
-          model
+          model,
+          onlineSearch
         })
       });
 
@@ -199,7 +200,8 @@ export default function App() {
         role: "assistant",
         content: rawResponse,
         timestamp: new Date().toLocaleTimeString(),
-        parsedManifest: parsed
+        parsedManifest: parsed,
+        sources: data.sources || []
       };
 
       setMessages(prev => [...prev, botMessage]);

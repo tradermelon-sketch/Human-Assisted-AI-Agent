@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Send, Bot, User, FileText, FolderSync, Settings, 
-  Loader2, Play, Eye, CheckCircle2, AlertTriangle, HelpCircle, RefreshCw
+  Loader2, Play, Eye, CheckCircle2, AlertTriangle, HelpCircle, RefreshCw,
+  Globe, Sparkles
 } from "lucide-react";
 import { ChatMessage, ActionManifest } from "../types";
 import ProviderSettings, { LLMProvider } from "./ProviderSettings";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
-  onSendMessage: (text: string, provider: string, model: string) => void;
+  onSendMessage: (text: string, provider: string, model: string, onlineSearch: boolean) => void;
   isLoading: boolean;
   onSelectManifest: (manifest: ActionManifest, messageId: string) => void;
   activeManifestMessageId: string | null;
@@ -26,6 +27,7 @@ export default function ChatPanel({
   const [inputText, setInputText] = useState("");
   const [provider, setProvider] = useState<LLMProvider>("gemini");
   const [model, setModel] = useState("gemini-3.5-flash");
+  const [onlineSearch, setOnlineSearch] = useState(true);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -37,7 +39,7 @@ export default function ChatPanel({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || isLoading) return;
-    onSendMessage(inputText, provider, model);
+    onSendMessage(inputText, provider, model, onlineSearch);
     setInputText("");
   };
 
@@ -217,6 +219,29 @@ export default function ChatPanel({
                         </div>
                       </div>
                     )}
+
+                    {/* Render search sources if available */}
+                    {msg.sources && msg.sources.length > 0 && (
+                      <div className="mt-3 pt-2.5 border-t border-[#30363d]/60 space-y-1.5" id="sources-container">
+                        <span className="text-[10px] font-mono text-gray-500 tracking-wider flex items-center space-x-1">
+                          <Globe className="w-3 h-3 text-[#3fb950]" />
+                          <span>REFERENSI ONLINE / SUMBER PENCARIAN:</span>
+                        </span>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {msg.sources.map((src, sIdx) => (
+                            <a
+                              key={sIdx}
+                              href={src.uri}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-[#3fb950]/10 hover:bg-[#3fb950]/20 border border-[#3fb950]/30 text-[#3fb950] text-[11px] transition-colors"
+                            >
+                              <span className="truncate max-w-[150px]">{src.title}</span>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -253,7 +278,29 @@ export default function ChatPanel({
       />
 
       {/* Input Message Box */}
-      <form onSubmit={handleSubmit} className="p-3 bg-[#0d1117] border-t border-[#30363d]" id="chat-input-form">
+      <form onSubmit={handleSubmit} className="p-3 bg-[#0d1117] border-t border-[#30363d] space-y-2.5" id="chat-input-form">
+        {/* Grounding & Search Toggle Bar */}
+        <div className="flex items-center justify-between px-1" id="online-search-toggle-container">
+          <button
+            type="button"
+            onClick={() => setOnlineSearch(prev => !prev)}
+            className={`flex items-center space-x-1.5 px-2 py-0.5 rounded text-[11px] font-mono border transition-all ${
+              onlineSearch
+                ? "bg-emerald-500/10 border-emerald-500/30 text-[#3fb950]"
+                : "bg-gray-500/5 border-gray-500/20 text-gray-500"
+            }`}
+            title="Aktifkan pencarian online dan integrasi referensi eksternal"
+            id="toggle-online-search-btn"
+          >
+            <Globe className={`w-3.5 h-3.5 ${onlineSearch ? "animate-pulse text-[#3fb950]" : ""}`} />
+            <span>{onlineSearch ? "Pencarian Online: AKTIF" : "Pencarian Online: MATI"}</span>
+          </button>
+          
+          <span className="text-[10px] font-mono text-gray-500" id="grounding-chunks-badge">
+            Auto-Indexing Grounding Chunks
+          </span>
+        </div>
+
         <div className="relative flex items-center bg-[#161b22] border border-[#30363d] rounded-md focus-within:border-[#58a6ff] focus-within:ring-1 focus-within:ring-[#58a6ff]">
           <input
             type="text"

@@ -23,7 +23,7 @@ export default function MemoryExplorer({ files: propFiles, isLoading: propIsLoad
   const [longTermMemories, setLongTermMemories] = useState<LongTermMemoryFact[]>([]);
   const [isMemoriesLoading, setIsMemoriesLoading] = useState(false);
   const [newContent, setNewContent] = useState("");
-  const [newCategory, setNewCategory] = useState<"user" | "ai">("user");
+  const [newCategory, setNewCategory] = useState<"user" | "ai" | "knowledge">("user");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
   const [memorySearch, setMemorySearch] = useState("");
@@ -162,6 +162,7 @@ export default function MemoryExplorer({ files: propFiles, isLoading: propIsLoad
 
   const userMemories = filteredMemories.filter(m => m.category === "user");
   const aiMemories = filteredMemories.filter(m => m.category === "ai");
+  const knowledgeMemories = filteredMemories.filter(m => m.category === "knowledge");
 
   return (
     <div className="flex flex-col h-full bg-[#0d1117] overflow-hidden" id="memory-explorer-root">
@@ -234,30 +235,42 @@ export default function MemoryExplorer({ files: propFiles, isLoading: propIsLoad
                   </h5>
                   
                   {/* Category Picker */}
-                  <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="grid grid-cols-3 gap-2 mb-3">
                     <button
                       type="button"
                       onClick={() => setNewCategory("user")}
-                      className={`flex items-center justify-center space-x-1.5 p-2 rounded text-xs font-medium border transition-colors ${
+                      className={`flex items-center justify-center space-x-1 p-2 rounded text-[11px] font-medium border transition-colors ${
                         newCategory === "user"
                           ? "bg-blue-500/10 border-blue-500/40 text-blue-400"
                           : "bg-[#21262d]/40 border-[#30363d] text-gray-400 hover:text-gray-300"
                       }`}
                     >
-                      <User className="w-3.5 h-3.5" />
-                      <span>Fakta Pengguna</span>
+                      <User className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="truncate">Fakta User</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setNewCategory("ai")}
-                      className={`flex items-center justify-center space-x-1.5 p-2 rounded text-xs font-medium border transition-colors ${
+                      className={`flex items-center justify-center space-x-1 p-2 rounded text-[11px] font-medium border transition-colors ${
                         newCategory === "ai"
                           ? "bg-purple-500/10 border-purple-500/40 text-purple-400"
                           : "bg-[#21262d]/40 border-[#30363d] text-gray-400 hover:text-gray-300"
                       }`}
                     >
-                      <Bot className="w-3.5 h-3.5" />
-                      <span>Fakta AI (Diri)</span>
+                      <Bot className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="truncate">Fakta AI</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewCategory("knowledge")}
+                      className={`flex items-center justify-center space-x-1 p-2 rounded text-[11px] font-medium border transition-colors ${
+                        newCategory === "knowledge"
+                          ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400"
+                          : "bg-[#21262d]/40 border-[#30363d] text-gray-400 hover:text-gray-300"
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="truncate">Pengetahuan</span>
                     </button>
                   </div>
 
@@ -266,7 +279,9 @@ export default function MemoryExplorer({ files: propFiles, isLoading: propIsLoad
                     placeholder={
                       newCategory === "user"
                         ? "Contoh: Pengguna lebih suka penjelasan singkat dan ramah."
-                        : "Contoh: AI harus dipanggil 'Kimi' dan selalu bersikap humoris."
+                        : newCategory === "ai"
+                        ? "Contoh: AI harus dipanggil 'Kimi' dan selalu bersikap humoris."
+                        : "Contoh: React 19 memperkenalkan Server Actions untuk memproses data langsung di server."
                     }
                     value={newContent}
                     onChange={(e) => setNewContent(e.target.value)}
@@ -301,20 +316,27 @@ export default function MemoryExplorer({ files: propFiles, isLoading: propIsLoad
                 </div>
 
                 {/* Totals Status Banner */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div className="p-3 bg-[#1f242c]/50 border border-blue-500/20 rounded-lg flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <User className="w-4 h-4 text-blue-400" />
-                      <span className="text-xs text-gray-400">Preferensi Pengguna</span>
+                    <div className="flex items-center space-x-1.5 min-w-0">
+                      <User className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                      <span className="text-xs text-gray-400 truncate">User</span>
                     </div>
-                    <span className="text-sm font-bold text-blue-400 font-mono">{userMemories.length}</span>
+                    <span className="text-sm font-bold text-blue-400 font-mono ml-2">{userMemories.length}</span>
                   </div>
                   <div className="p-3 bg-[#1f242c]/50 border border-purple-500/20 rounded-lg flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Bot className="w-4 h-4 text-purple-400" />
-                      <span className="text-xs text-gray-400">Aturan/Karakter AI</span>
+                    <div className="flex items-center space-x-1.5 min-w-0">
+                      <Bot className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                      <span className="text-xs text-gray-400 truncate">AI (Diri)</span>
                     </div>
-                    <span className="text-sm font-bold text-purple-400 font-mono">{aiMemories.length}</span>
+                    <span className="text-sm font-bold text-purple-400 font-mono ml-2">{aiMemories.length}</span>
+                  </div>
+                  <div className="p-3 bg-[#1f242c]/50 border border-emerald-500/20 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center space-x-1.5 min-w-0">
+                      <Sparkles className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                      <span className="text-xs text-gray-400 truncate">Pengetahuan</span>
+                    </div>
+                    <span className="text-sm font-bold text-emerald-400 font-mono ml-2">{knowledgeMemories.length}</span>
                   </div>
                 </div>
               </div>
@@ -456,6 +478,83 @@ export default function MemoryExplorer({ files: propFiles, isLoading: propIsLoad
                                 <button
                                   onClick={() => startEditing(mem)}
                                   className="p-1 text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 rounded transition-all"
+                                  title="Edit memori"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteMemory(mem.id)}
+                                  className="p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-all"
+                                  title="Hapus memori"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Knowledge Base / Factual Column */}
+              <div className="space-y-2 pt-2">
+                <h5 className="text-xs font-semibold text-emerald-400 flex items-center space-x-1.5 uppercase tracking-wider px-1">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Basis Pengetahuan & Informasi Terindeks ({knowledgeMemories.length})</span>
+                </h5>
+
+                {isMemoriesLoading && longTermMemories.length === 0 ? (
+                  <div className="py-8 text-center text-gray-400 text-xs font-mono flex items-center justify-center space-x-2 bg-[#161b22]/30 border border-[#30363d]/50 rounded-lg">
+                    <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+                    <span>Memuat basis memori...</span>
+                  </div>
+                ) : knowledgeMemories.length === 0 ? (
+                  <div className="py-8 text-center text-gray-500 text-xs border border-dashed border-[#30363d] rounded-lg bg-[#161b22]/10 leading-normal px-4">
+                    Belum ada memori pengetahuan yang disimpan. AI akan mengekstrak fakta penting hasil pencarian web ke sini secara otomatis.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {knowledgeMemories.map((mem) => (
+                      <div key={mem.id} className="bg-[#161b22] border border-[#30363d] hover:border-emerald-500/30 rounded-lg p-3.5 transition-all flex flex-col justify-between group">
+                        {editingId === mem.id ? (
+                          <div className="space-y-2">
+                            <textarea
+                              value={editingContent}
+                              onChange={(e) => setEditingContent(e.target.value)}
+                              className="w-full bg-[#0d1117] border border-[#30363d] rounded p-2 text-xs text-gray-300 focus:outline-none focus:border-emerald-500 resize-none"
+                              rows={2}
+                            />
+                            <div className="flex justify-end space-x-1.5">
+                              <button
+                                onClick={cancelEditing}
+                                className="p-1 px-2 text-[10px] bg-[#21262d] hover:bg-[#30363d] text-gray-400 rounded flex items-center space-x-1 transition-colors"
+                              >
+                                <X className="w-3 h-3" />
+                                <span>Batal</span>
+                              </button>
+                              <button
+                                onClick={() => handleSaveEdit(mem.id)}
+                                className="p-1 px-2 text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 rounded flex items-center space-x-1 transition-colors"
+                              >
+                                <Check className="w-3 h-3" />
+                                <span>Simpan</span>
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-xs text-gray-200 leading-relaxed break-words">{mem.content}</p>
+                            <div className="flex items-center justify-between border-t border-[#30363d]/50 pt-2.5 mt-2.5">
+                              <span className="text-[10px] text-gray-500 font-mono">
+                                Diperbarui: {new Date(mem.timestamp).toLocaleDateString("id-ID")}
+                              </span>
+                              <div className="flex space-x-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => startEditing(mem)}
+                                  className="p-1 text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded transition-all"
                                   title="Edit memori"
                                 >
                                   <Edit2 className="w-3.5 h-3.5" />

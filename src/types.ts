@@ -15,6 +15,7 @@ export interface ChatMessage {
   timestamp: string;
   parsedManifest?: ActionManifest | null;
   hasManifestError?: boolean;
+  sources?: { title: string; uri: string }[];
 }
 
 export interface MemoryFile {
@@ -47,7 +48,7 @@ export interface ExecutionStepReport {
 
 export interface LongTermMemoryFact {
   id: string;
-  category: "user" | "ai";
+  category: "user" | "ai" | "knowledge";
   content: string;
   timestamp: number;
 }

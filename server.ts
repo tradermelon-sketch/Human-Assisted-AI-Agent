@@ -526,7 +526,7 @@ app.get("/api/memory/status", (req, res) => {
  */
 interface LongTermMemoryFact {
   id: string;
-  category: "user" | "ai";
+  category: "user" | "ai" | "knowledge";
   content: string;
   timestamp: number;
 }
@@ -597,8 +597,9 @@ You are a "Memory Extraction Subsystem".
 Your job is to analyze the recent conversation exchange between a User and an AI Assistant, and extract any NEW, IMPORTANT, and PERMANENT facts about:
 1. The User (e.g., name, preferences, skills, habits, email, preferred languages, project goals).
 2. The AI itself (e.g., how the AI should behave, facts about the AI's identity, custom names, or specialized instructions).
+3. General or domain-specific Knowledge/Facts (e.g., information retrieved from online search, programming paradigms, facts about current events, or reference guides) which could be useful for the AI to retain in its long-term knowledge base.
 
-Do NOT extract transient information like "the user wants to read a file now" or "the user is debugging an error". Only extract permanent characteristics, facts, or long-term preferences.
+Do NOT extract transient information like "the user wants to read a file now" or "the user is debugging an error". Only extract permanent characteristics, facts, or long-term preferences/knowledge.
 
 Below is the exchange:
 === CONVERSATION ===
@@ -611,12 +612,12 @@ Compare these against the existing list of memories:
 ${JSON.stringify(currentMemories)}
 =========================
 
-If there are any NEW permanent facts (not already present or implied by existing memories), return them strictly as a JSON object matching this schema:
+If there are any NEW permanent facts/knowledge (not already present or implied by existing memories), return them strictly as a JSON object matching this schema:
 {
   "new_memories": [
     {
-      "category": "user", // or "ai"
-      "content": "Description of the new permanent fact"
+      "category": "user", // or "ai" or "knowledge"
+      "content": "Description of the new permanent fact or knowledge chunk"
     }
   ]
 }
@@ -659,7 +660,7 @@ Output ONLY the JSON object. Do not include any explanation or markdown formatti
       let updated = false;
 
       extractedJson.new_memories.forEach((mem: any) => {
-        if (mem.content && (mem.category === "user" || mem.category === "ai")) {
+        if (mem.content && (mem.category === "user" || mem.category === "ai" || mem.category === "knowledge")) {
           // Double-check to avoid duplicates
           const isDup = existing.some(
             (e: any) => e.category === mem.category && e.content.toLowerCase().replace(/[.\s]/g, "") === mem.content.toLowerCase().replace(/[.\s]/g, "")
@@ -784,11 +785,13 @@ async function callLLM(
   provider: string,
   model?: string,
   systemPrompt?: string,
-  forceJson: boolean = false
-): Promise<{ text: string; actualModel?: string }> {
+  forceJson: boolean = false,
+  enableSearch: boolean = false
+): Promise<{ text: string; actualModel?: string; sources?: { title: string; uri: string }[] }> {
   const selectedProvider = provider.toLowerCase();
   let llmResponse = "";
   let actualModel = model;
+  let sources: { title: string; uri: string }[] = [];
 
   if (selectedProvider === "openrouter") {
     const apiKey = process.env.OPENROUTER_API_KEY;
@@ -867,6 +870,9 @@ async function callLLM(
     if (forceJson) {
       config.responseMimeType = "application/json";
     }
+    if (enableSearch) {
+      config.tools = [{ googleSearch: {} }];
+    }
     
     const response = await ai.models.generateContent({
       model: model || "gemini-3.5-flash",
@@ -876,6 +882,17 @@ async function callLLM(
     
     llmResponse = response.text || "";
     actualModel = model || "gemini-3.5-flash";
+
+    // Extract search grounding sources if present
+    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    if (chunks) {
+      sources = chunks
+        .map((c: any) => ({
+          title: c.web?.title || c.web?.uri || "Sumber Referensi",
+          uri: c.web?.uri || ""
+        }))
+        .filter((s: any) => s.uri);
+    }
   } else {
     // Ollama/Local Fallback
     const ollamaUrl = "http://localhost:11434/api/chat";
@@ -945,7 +962,7 @@ async function callLLM(
 
 app.post("/api/chat", async (req, res) => {
   try {
-    const { message, history, provider = "ollama", model } = req.body;
+    const { message, history, provider = "ollama", model, onlineSearch = true } = req.body;
     
     // 1. Retrieve relevant memory context from fallback store in Node.js
     let contextStr = "";
@@ -982,15 +999,16 @@ app.post("/api/chat", async (req, res) => {
       }
     }
     
-    // 1.5 Retrieve long-term memories (facts about user and AI)
+    // 1.5 Retrieve long-term memories (facts about user, AI, and factual knowledge base)
     const longTermMemories = readLongTermMemories(CURRENT_WORKSPACE_ROOT);
     const userMemories = longTermMemories.filter(m => m.category === "user");
     const aiMemories = longTermMemories.filter(m => m.category === "ai");
+    const knowledgeMemories = longTermMemories.filter(m => m.category === "knowledge");
 
     let longTermContext = "";
     if (longTermMemories.length > 0) {
-      longTermContext = "\n\n=== MEMORI JANGKA PANJANG (LONG-TERM MEMORIES) ===\n";
-      longTermContext += "Sistem memori mendeteksi fakta-fakta berikut yang HARUS Anda ingat dan patuhi secara absolut:\n";
+      longTermContext = "\n\n=== MEMORI JANGKA PANJANG & KNOWLEDGE BASE ===\n";
+      longTermContext += "Sistem memori mendeteksi fakta & pengetahuan berikut yang HARUS Anda ingat dan jadikan pedoman secara absolut:\n";
       if (userMemories.length > 0) {
         longTermContext += "\nFakta & Preferensi Pengguna (User):\n";
         userMemories.forEach(m => {
@@ -1003,13 +1021,24 @@ app.post("/api/chat", async (req, res) => {
           longTermContext += `- ${m.content}\n`;
         });
       }
+      if (knowledgeMemories.length > 0) {
+        longTermContext += "\nBasis Pengetahuan Terindeks (Knowledge Base):\n";
+        knowledgeMemories.forEach(m => {
+          longTermContext += `- ${m.content}\n`;
+        });
+      }
       longTermContext += "=================================================\n\n";
-      longTermContext += "Ingat fakta di atas sepanjang percakapan ini. Jika ada informasi baru tentang pengguna atau diri Anda yang diungkapkan, diskusikan secara alami, dan sistem kami akan menyimpannya ke memori jangka panjang secara otomatis.\n";
+      longTermContext += "Ingat fakta & basis pengetahuan di atas sepanjang percakapan ini. Jika ada informasi atau fakta baru tentang pengguna, perilaku AI, atau informasi pengetahuan baru (termasuk referensi online hasil pencarian), diskusikan secara alami, dan sistem kami akan mengekstrak serta menyimpannya ke kategori memori yang sesuai (user/ai/knowledge) secara otomatis.\n";
     }
+
+    const currentWIB = new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
+    const currentUTC = new Date().toISOString();
 
     const baseSystemPrompt = `
 You are a "Human-Assisted AI Agent" operating under the strict proxy tool-use paradigm called "Proxy Tool-Use via UI Mediation".
 You never execute actions on the filesystem directly. Instead, you propose action plans as structured JSON manifests.
+
+WAKTU & TANGGAL REAL-TIME SEKARANG: ${currentWIB} WIB (Waktu Indonesia Barat) / ${currentUTC} (UTC). Gunakan informasi waktu ini untuk menjawab pertanyaan tentang tanggal, hari, bulan, tahun, atau jam sekarang secara akurat.
 
 Your output format is strictly bifurcated:
 1. If you need to perform any filesystem operations (like reading, scanning, or writing files), you MUST output ONLY a valid JSON object matching the schema below. No greeting, no conversational text before or after the JSON block.
@@ -1051,9 +1080,9 @@ Aturan Penting Keamanan:
       ? `${baseSystemPrompt}\nUse the following retrieved context from the workspace vectors to accurately formulate your action manifest:\n${contextStr}${longTermContext}`
       : `${baseSystemPrompt}${longTermContext}`;
       
-    // 2. Call the LLM helper
+    // 2. Call the LLM helper with enableSearch set to onlineSearch (if provider supports it)
     const selectedProvider = provider.toLowerCase();
-    const llmResult = await callLLM(message, history, selectedProvider, model, systemPrompt, true);
+    const llmResult = await callLLM(message, history, selectedProvider, model, systemPrompt, true, onlineSearch);
     
     // 3. Asynchronously run background memory extraction
     extractAndSaveMemories(message, llmResult.text, selectedProvider, model).catch(err => {
@@ -1065,7 +1094,8 @@ Aturan Penting Keamanan:
       response: llmResult.text,
       provider: selectedProvider,
       model: llmResult.actualModel || model || (selectedProvider === "gemini" ? "gemini-3.5-flash" : (selectedProvider === "openrouter" ? "openrouter/free" : "llama3")),
-      has_context: contextStr !== ""
+      has_context: contextStr !== "",
+      sources: llmResult.sources || []
     });
   } catch (err: any) {
     res.status(500).json({ status: "failed", error: err.message });
