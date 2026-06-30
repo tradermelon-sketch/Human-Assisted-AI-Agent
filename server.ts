@@ -706,8 +706,8 @@ app.post("/api/long-term-memories", (req, res) => {
     if (!category || !content) {
       return res.status(400).json({ status: "failed", error: "Kategori dan konten memori harus diisi." });
     }
-    if (category !== "user" && category !== "ai") {
-      return res.status(400).json({ status: "failed", error: "Kategori harus berupa 'user' atau 'ai'." });
+    if (category !== "user" && category !== "ai" && category !== "knowledge") {
+      return res.status(400).json({ status: "failed", error: "Kategori harus berupa 'user', 'ai', atau 'knowledge'." });
     }
 
     const memories = readLongTermMemories(CURRENT_WORKSPACE_ROOT);
@@ -743,7 +743,7 @@ app.put("/api/long-term-memories/:id", (req, res) => {
     if (content !== undefined) {
       memories[index].content = content.trim();
     }
-    if (category !== undefined && (category === "user" || category === "ai")) {
+    if (category !== undefined && (category === "user" || category === "ai" || category === "knowledge")) {
       memories[index].category = category;
     }
     memories[index].timestamp = Date.now();
