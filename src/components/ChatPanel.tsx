@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { ChatMessage, ActionManifest } from "../types";
 import ProviderSettings, { LLMProvider } from "./ProviderSettings";
+import MarkdownRenderer from "./MarkdownRenderer";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -136,7 +137,7 @@ export default function ChatPanel({
                   }`}>
                     {/* Render message string */}
                     {msg.content && !manifest && (
-                      <p className="whitespace-pre-wrap font-sans text-[13px]">{msg.content}</p>
+                      <MarkdownRenderer content={msg.content} />
                     )}
 
                     {/* Render message containing plain conversational elements first */}
@@ -149,7 +150,11 @@ export default function ChatPanel({
                           if (jsonStartIndex > 0) {
                             const preText = msg.content.substring(0, jsonStartIndex).trim();
                             if (preText) {
-                              return <p className="whitespace-pre-wrap font-sans text-[13px] border-b border-[#30363d]/50 pb-2 mb-2 text-gray-400">{preText}</p>;
+                              return (
+                                <div className="border-b border-[#30363d]/50 pb-2 mb-2">
+                                  <MarkdownRenderer content={preText} />
+                                </div>
+                              );
                             }
                           }
                           return null;
