@@ -1,10 +1,59 @@
 import React, { useState, useEffect } from "react";
 import { DiffEditor } from "@monaco-editor/react";
 import { Loader2, AlertCircle, RefreshCw, FileText } from "lucide-react";
+import ErrorBoundary from "./ErrorBoundary";
 
 interface DiffViewerProps {
   filePath: string;
   newValue: string;
+}
+
+function LocalDiffViewer({ original, modified }: { original: string; modified: string }) {
+  const originalLines = original.split("\n");
+  const modifiedLines = modified.split("\n");
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 h-full divide-y md:divide-y-0 md:divide-x divide-[#30363d] overflow-hidden bg-[#090d13]">
+      {/* Left panel: Original */}
+      <div className="flex flex-col h-full overflow-hidden min-h-[200px]">
+        <div className="px-3 py-1.5 bg-[#161b22] text-[10px] font-mono text-gray-400 border-b border-[#30363d] flex justify-between items-center select-none">
+          <span>BERKAS ASLI (ORIGINAL)</span>
+          <span>{originalLines.length} baris</span>
+        </div>
+        <div className="flex-1 overflow-auto p-3 text-[11px] font-mono leading-relaxed bg-[#070a0f]">
+          {originalLines.map((line, idx) => (
+            <div key={idx} className="flex hover:bg-[#161b22]/30 px-1">
+              <span className="w-8 text-right text-gray-600 select-none pr-3 border-r border-[#30363d]/30 font-mono text-[10px]">{idx + 1}</span>
+              <span className="pl-3 text-gray-400 whitespace-pre break-all">{line || " "}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Right panel: Modified */}
+      <div className="flex flex-col h-full overflow-hidden min-h-[200px]">
+        <div className="px-3 py-1.5 bg-[#161b22] text-[10px] font-mono text-emerald-400/90 border-b border-[#30363d] flex justify-between items-center select-none">
+          <span>BERKAS USULAN (MODIFIED)</span>
+          <span>{modifiedLines.length} baris</span>
+        </div>
+        <div className="flex-1 overflow-auto p-3 text-[11px] font-mono leading-relaxed bg-[#070a0f]">
+          {modifiedLines.map((line, idx) => {
+            const isDifferent = originalLines[idx] !== line;
+            return (
+              <div 
+                key={idx} 
+                className={`flex px-1 ${
+                  isDifferent ? "bg-emerald-950/20 text-emerald-300" : "text-gray-300 hover:bg-[#161b22]/30"
+                }`}
+              >
+                <span className="w-8 text-right text-gray-600 select-none pr-3 border-r border-[#30363d]/30 font-mono text-[10px]">{idx + 1}</span>
+                <span className="pl-3 whitespace-pre break-all">{line || " "}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function DiffViewer({ filePath, newValue }: DiffViewerProps) {
@@ -125,24 +174,26 @@ export default function DiffViewer({ filePath, newValue }: DiffViewerProps) {
             </button>
           </div>
         ) : (
-          <DiffEditor
-            height="100%"
-            language={getLanguage(filePath)}
-            theme="vs-dark"
-            original={originalValue}
-            modified={newValue}
-            options={{
-              readOnly: true,
-              fontSize: 12,
-              fontFamily: "JetBrains Mono, Menlo, Monaco, Consolas, monospace",
-              minimap: { enabled: false },
-              scrollBeyondLastLine: false,
-              renderSideBySide: true,
-              originalEditable: false,
-              lineNumbers: "on",
-              diffWordWrap: "on"
-            }}
-          />
+          <ErrorBoundary fallback={<LocalDiffViewer original={originalValue} modified={newValue} />}>
+            <DiffEditor
+              height="100%"
+              language={getLanguage(filePath)}
+              theme="vs-dark"
+              original={originalValue}
+              modified={newValue}
+              options={{
+                readOnly: true,
+                fontSize: 12,
+                fontFamily: "JetBrains Mono, Menlo, Monaco, Consolas, monospace",
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                renderSideBySide: true,
+                originalEditable: false,
+                lineNumbers: "on",
+                diffWordWrap: "on"
+              }}
+            />
+          </ErrorBoundary>
         )}
       </div>
     </div>

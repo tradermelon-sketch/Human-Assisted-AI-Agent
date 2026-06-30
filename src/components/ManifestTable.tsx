@@ -197,9 +197,13 @@ export default function ManifestTable({
                   <div className="flex items-center space-x-1 flex-shrink-0">
                     {isVal ? (
                       isVal.valid ? (
-                        <CheckCircle2 className="w-4 h-4 text-[#2ea043]" title="Aman & Valid" />
+                        <span title="Aman & Valid">
+                          <CheckCircle2 className="w-4 h-4 text-[#2ea043]" />
+                        </span>
                       ) : (
-                        <AlertTriangle className="w-4 h-4 text-[#f85149]" title={isVal.error} />
+                        <span title={isVal.error}>
+                          <AlertTriangle className="w-4 h-4 text-[#f85149]" />
+                        </span>
                       )
                     ) : (
                       <Loader2 className="w-3.5 h-3.5 text-gray-500 animate-spin" />

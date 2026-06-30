@@ -150,9 +150,13 @@ export default function ProviderSettings({
             
             <div className="absolute right-2.5 pointer-events-none flex items-center space-x-1">
               {isOk ? (
-                <ShieldCheck className="w-4 h-4 text-emerald-500" title="Provider Siap & Terkonfigurasi" />
+                <span title="Provider Siap & Terkonfigurasi">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                </span>
               ) : (
-                <ShieldAlert className="w-4 h-4 text-rose-500 animate-pulse" title="Perlu Konfigurasi / Offline" />
+                <span title="Perlu Konfigurasi / Offline">
+                  <ShieldAlert className="w-4 h-4 text-rose-500 animate-pulse" />
+                </span>
               )}
             </div>
           </div>
