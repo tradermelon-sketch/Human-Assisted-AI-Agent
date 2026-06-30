@@ -230,6 +230,99 @@ export default function App() {
     }
   };
 
+  // Handle Retry / Regenerate last agent response to prevent double commands
+  const handleRetryMessage = async (messageId: string, provider: string, model: string, onlineSearch: boolean) => {
+    const msgIndex = messages.findIndex(m => m.id === messageId);
+    if (msgIndex === -1) return;
+
+    // Find the nearest user message before this assistant message
+    let userMsgIndex = -1;
+    for (let i = msgIndex - 1; i >= 0; i--) {
+      if (messages[i].role === "user") {
+        userMsgIndex = i;
+        break;
+      }
+    }
+
+    if (userMsgIndex === -1) return;
+
+    const userMessage = messages[userMsgIndex];
+    setLastProvider(provider);
+    setLastModel(model);
+
+    // History is all messages before the user message
+    const historyPayload = messages.slice(0, userMsgIndex).map(m => ({
+      role: m.role,
+      content: m.content
+    }));
+
+    // Remove the retried assistant message and any messages after the user message in history
+    setMessages(prev => prev.slice(0, userMsgIndex + 1));
+    
+    // Clear active manifest if it was tied to the retried message
+    if (activeMessageId === messageId) {
+      setActiveManifest(null);
+      setActiveMessageId(null);
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMessage.content,
+          history: historyPayload,
+          provider,
+          model,
+          onlineSearch
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned error status ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.model) {
+        setActualActiveModel(data.model);
+      }
+      const rawResponse = data.response || "";
+      const parsed = extractManifest(rawResponse);
+
+      const botMessage: ChatMessage = {
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: rawResponse,
+        timestamp: new Date().toLocaleTimeString(),
+        parsedManifest: parsed,
+        sources: data.sources || []
+      };
+
+      setMessages(prev => [...prev, botMessage]);
+
+      if (parsed) {
+        handleSelectManifest(parsed, botMessage.id);
+      }
+
+      fetchMemoryStatus();
+
+    } catch (err: any) {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: `error-${Date.now()}`,
+          role: "assistant",
+          content: `Maaf, terjadi kesalahan saat menghubungi server chat: ${err.message}`,
+          timestamp: new Date().toLocaleTimeString()
+        }
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Handle Review manifest action click
   const handleSelectManifest = (manifest: ActionManifest, messageId: string) => {
     setActiveManifest(manifest);
@@ -290,6 +383,7 @@ export default function App() {
           onSelectManifest={handleSelectManifest}
           activeManifestMessageId={activeMessageId}
           actualActiveModel={actualActiveModel}
+          onRetryMessage={handleRetryMessage}
         />
       </div>
 

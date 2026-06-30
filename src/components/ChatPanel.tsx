@@ -15,6 +15,7 @@ interface ChatPanelProps {
   onSelectManifest: (manifest: ActionManifest, messageId: string) => void;
   activeManifestMessageId: string | null;
   actualActiveModel?: string | null;
+  onRetryMessage: (messageId: string, provider: string, model: string, onlineSearch: boolean) => void;
 }
 
 export default function ChatPanel({
@@ -23,7 +24,8 @@ export default function ChatPanel({
   isLoading,
   onSelectManifest,
   activeManifestMessageId,
-  actualActiveModel
+  actualActiveModel,
+  onRetryMessage
 }: ChatPanelProps) {
   const [inputText, setInputText] = useState("");
   const [provider, setProvider] = useState<LLMProvider>("gemini");
@@ -248,6 +250,23 @@ export default function ChatPanel({
                       </div>
                     )}
                   </div>
+
+                  {/* Reload button under the assistant chat bubble */}
+                  {!isUser && msg.id !== "welcome-msg" && (
+                    <div className="flex items-center space-x-2 pt-1 pl-1">
+                      <button
+                        type="button"
+                        onClick={() => onRetryMessage(msg.id, provider, model, onlineSearch)}
+                        disabled={isLoading}
+                        className="flex items-center space-x-1.5 px-2.5 py-1 text-[11px] font-semibold text-gray-400 hover:text-blue-400 disabled:text-gray-600 disabled:cursor-not-allowed bg-[#1c2128]/40 hover:bg-[#1c2128] border border-[#30363d] rounded transition-all shadow-sm select-none"
+                        id={`retry-message-btn-${msg.id}`}
+                        title="Ulangi jawaban ini"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin text-blue-400" : ""}`} />
+                        <span>Ulangi Jawaban</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );

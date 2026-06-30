@@ -683,7 +683,8 @@ Output ONLY the JSON object. Do not include any explanation or markdown formatti
       }
     }
   } catch (err: any) {
-    console.error("Node automatic memory extraction warning:", err.message);
+    // Log as a clean warning to avoid throwing high-priority logs when background tasks face quota limitations
+    console.warn("[Memory] Automatic background memory extraction skipped or rate-limited:", err.message || err);
   }
 }
 
@@ -1071,6 +1072,7 @@ If proposing actions, your property MUST be a valid JSON object with the followi
 
 Aturan Penting Keamanan:
 - Tipe aksi (type) hanya boleh berisi salah satu dari whitelist: "read_file", "scan_directory", "write_file".
+- PENTING UNTUK PEMBUATAN FOLDER/DIREKTORI BARU: Jika pengguna meminta Anda untuk membuat folder atau direktori baru (misalnya "buatkan folder bernama aplikasi-test"), Anda tidak bisa menggunakan tipe aksi baru atau "mkdir". Namun, Anda BISA dan HARUS mengusulkan aksi "write_file" dengan membuat file placeholder (seperti "aplikasi-test/README.md" atau "aplikasi-test/.gitkeep") di dalam folder tersebut. Karena aksi "write_file" akan secara otomatis membuat seluruh folder induk secara rekursif jika belum ada.
 - Semua path harus relatif terhadap root workspace. JANGAN gunakan path absolut atau path traversal (misal: "../") yang menunjuk ke luar workspace.
 - Jika menulis file (write_file), Anda wajib menyertakan parameter "content" dengan isi lengkap file tersebut.
 - Jangan berikan penjelasan teks apa pun di luar blok JSON jika Anda mengusulkan aksi. Output Anda harus berupa JSON utuh.
